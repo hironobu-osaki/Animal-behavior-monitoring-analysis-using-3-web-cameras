@@ -109,10 +109,15 @@ for jj = 1:Fparts
         Laser(1)=0;
     end
     LaserOnset = diff(Laser);
-    LaserOnsetFrame = find(LaserOnset==200)+1;
+    [~,LaserOnsetFrame] = findpeaks(LaserOnset,'MinPeakHeight',150,'MinPeakDistance',450);
+    LaserOnsetFrame = LaserOnsetFrame +1;
+    DiffLaserOnset = diff(LaserOnsetFrame);
+    
 %     LaserOnsetFrame(2:end+1)=LaserOnsetFrame;
 %     LaserOnsetFrame(1)=1;
-    LaserOffsetFrame = find(LaserOnset==-200)+1;
+    [~,LaserOffsetFrame] = findpeaks(-LaserOnset,'MinPeakHeight',150,'MinPeakDistance',450);
+    LaserOffsetFrame = LaserOffsetFrame +1;
+    DiffLaserOnset = diff(LaserOnsetFrame);
     LaserDurationFrame = LaserOffsetFrame-LaserOnsetFrame;
     
     ChR2Laser = vertcat(s.ChR2Laser);
