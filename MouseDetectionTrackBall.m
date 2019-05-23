@@ -21,7 +21,7 @@ for jj = 1:Fparts
     vidWidth = Image.Width;
     s = struct('Data', zeros(vidHeight,vidWidth, 1,'uint8'),'colormap',[]);
     k = 1;
-    
+    disp();
     steps = Image.Duration*Image.FrameRate;
     
     disp('Reading avi data...');
