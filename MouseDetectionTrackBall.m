@@ -77,7 +77,7 @@ for jj = 1:Fparts
         
         EyeLumi = s(i).Data(Ey(1):Ey(2),Ex(1):Ex(2));
         LaserLumi = s(i).Data(329:355,398:425);
-        ChR2LaserLumi = s(i).Data(129:139,700:719);
+        ChR2LaserLumi = s(i).Data(129:139,690:709);
 %         s(i).EyeBlink = mean(mean(EyeLumi<150));
         s(i).EyeBlink = length(find(EyeLumi<100));
         
@@ -116,8 +116,8 @@ for jj = 1:Fparts
     LaserDurationFrame = LaserOffsetFrame-LaserOnsetFrame;
     
     ChR2Laser = vertcat(s.ChR2Laser);
-    ChR2Laser(ChR2Laser<240)=0;
-    ChR2Laser(ChR2Laser>240)=200;
+    ChR2Laser(ChR2Laser<120)=0;
+    ChR2Laser(ChR2Laser>120)=200;
     if ChR2Laser(1)==200
         ChR2Laser(1)=0;
     end
