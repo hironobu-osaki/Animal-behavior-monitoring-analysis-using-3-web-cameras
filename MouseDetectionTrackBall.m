@@ -147,11 +147,17 @@ for jj = 1:Fparts
     
     
     
-    EyeBlink = vertcat(s.EyeBlink);
-    EyeBlink(2:end) = diff(EyeBlink);
-    EyeBlink(EyeBlink > -2*std(EyeBlink)) = 0;
-    EyeBlink(EyeBlink < -2*std(EyeBlink)) = 1;
-    EyeBlink(Laser>0)=0;
+    PreEyeBlink = vertcat(s.EyeBlink);
+    d1 = designfilt('bandpassiir','FilterOrder',12, ...
+        'HalfPowerFrequency1',0.05,'HalfPowerFrequency2',0.6,'DesignMethod','butter');
+    EyeBlink = filtfilt(d1,PreEyeBlink);
+    
+%     EyeBlink(2:end) = diff(EyeBlink);
+%     EyeBlink(EyeBlink > -2*std(EyeBlink)) = 0;
+%     EyeBlink(EyeBlink < -2*std(EyeBlink)) = 1;
+%     EyeBlink(Laser>0)=0;
+    EyeBlink(EyeBlink > -15) = 0;
+    EyeBlink(EyeBlink < -15) = 1;
     for p =1:length(LaserOffsetFrame)
         EyeBlink(LaserOffsetFrame(p):LaserOffsetFrame(p)+10) =0;    %remove exposer time changing frame
     end
