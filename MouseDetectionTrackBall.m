@@ -104,6 +104,7 @@ for jj = 1:Fparts
     end
     
     Laser = vertcat(s.Laser);
+    disp();
     Laser(Laser<180)=0;
     Laser(Laser>180)=200;
     if Laser(1)==200
