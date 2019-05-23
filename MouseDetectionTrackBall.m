@@ -1,6 +1,7 @@
 % function s = MouseDetectionTrackBall
 
-[Fname, Pname] = uigetfile('D:\TrackBallMovie\*Combined.avi','MultiSelect','on');
+% [Fname, Pname] = uigetfile('D:\TrackBallMovie\*Combined.avi','MultiSelect','on');
+[Fname, Pname] = uigetfile('/Users/moeko/Desktop/R139R140/*Combined.avi','MultiSelect','on');
 
 Fparts = length(Fname);
 if Fparts>10
@@ -116,8 +117,8 @@ for jj = 1:Fparts
     LaserDurationFrame = LaserOffsetFrame-LaserOnsetFrame;
     
     ChR2Laser = vertcat(s.ChR2Laser);
-    ChR2Laser(ChR2Laser<240)=0;
-    ChR2Laser(ChR2Laser>240)=200;
+    ChR2Laser(ChR2Laser<239)=0;
+    ChR2Laser(ChR2Laser>239)=200;
     if ChR2Laser(1)==200
         ChR2Laser(1)=0;
     end
