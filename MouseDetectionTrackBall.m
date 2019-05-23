@@ -260,7 +260,15 @@ for jj = 1:Fparts
     end
 end
 
-% figure,imagesc(s(155).Data),colormap(gray)
+Frames = 1:length(EyeBlink);
+    h2 =figure;
+    h2.Position = [0 40 Scr(3)/8 Scr(4)/3];
+subplot(2,1,1)
+imagesc(s(min(Frames(EyeBlink==0))).Data(30:120,30:150)),colormap(gray)
+title('Eye open')
+subplot(2,1,2)
+imagesc(s(min(Frames(EyeBlink==1))+1).Data(30:120,30:150)),colormap(gray)
+title('Eye close')
 % SaveFname = [Fname(1:end-12) 'AnalyzedMovie.mat'];
 % SaveFname2 = fullfile(Pname,SaveFname);
 % save(SaveFname2, 's')
