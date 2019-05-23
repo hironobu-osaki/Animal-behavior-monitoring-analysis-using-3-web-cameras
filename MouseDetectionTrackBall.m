@@ -21,7 +21,6 @@ for jj = 1:Fparts
     vidWidth = Image.Width;
     s = struct('Data', zeros(vidHeight,vidWidth, 1,'uint8'),'colormap',[]);
     k = 1;
-    disp();
     steps = Image.Duration*Image.FrameRate;
     
     disp('Reading avi data...');
@@ -104,7 +103,6 @@ for jj = 1:Fparts
     end
     
     Laser = vertcat(s.Laser);
-    disp();
     Laser(Laser<180)=0;
     Laser(Laser>180)=200;
     if Laser(1)==200
