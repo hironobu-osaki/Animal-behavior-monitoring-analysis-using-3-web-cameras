@@ -30,52 +30,54 @@ for jj = 1:Fparts
         k = k+1;
     end
     
-    if jj==1
-        Ex=[75,96];
-        Ey=[52,62];
-        figure,
-        EyeDetectionOK=1;
-        while EyeDetectionOK
-            
-            
-            FirstImage = s(1).Data;
-            imagesc(FirstImage(1:150,1:200))
-            colormap(gray)
-            hold on
-            %Eyeblink detection area
-            plot([Ex(1) Ex(1)],[Ey(1) Ey(2)],'r-')
-            plot([Ex(2) Ex(2)],[Ey(1) Ey(2)],'r-')
-            plot([Ex(1) Ex(2)],[Ey(1) Ey(1)],'r-')
-            plot([Ex(1) Ex(2)],[Ey(2) Ey(2)],'r-')
-            
-            prompt = 'Input the X value to shift the Eye detection area ...';
-            x = input(prompt);
-            prompt = 'Input the Y value to shift the Eye detection area ...';
-            y = input(prompt);
-            Ex = Ex +x;
-            Ey = Ey +y;
-            
-            
-            hold off,imagesc(FirstImage(1:150,1:200))
-            colormap(gray)
-            hold on
-            %Eyeblink detection area
-            plot([Ex(1) Ex(1)],[Ey(1) Ey(2)],'r-')
-            plot([Ex(2) Ex(2)],[Ey(1) Ey(2)],'r-')
-            plot([Ex(1) Ex(2)],[Ey(1) Ey(1)],'r-')
-            plot([Ex(1) Ex(2)],[Ey(2) Ey(2)],'r-')
-            
-            prompt = 'Good? Press 0, Bad? Press 1...';
-            EyeDetectionOK = input(prompt);
-        end
-    end
+%     if jj==1
+        Ex=[75,100];
+        Ey=[45,70];
+%         figure,
+%         EyeDetectionOK=1;
+%         while EyeDetectionOK
+%             
+%             
+%             FirstImage = s(1).Data;
+%             imagesc(FirstImage(1:150,1:200))
+%             colormap(gray)
+%             hold on
+%             %Eyeblink detection area
+%             plot([Ex(1) Ex(1)],[Ey(1) Ey(2)],'r-')
+%             plot([Ex(2) Ex(2)],[Ey(1) Ey(2)],'r-')
+%             plot([Ex(1) Ex(2)],[Ey(1) Ey(1)],'r-')
+%             plot([Ex(1) Ex(2)],[Ey(2) Ey(2)],'r-')
+%             
+%             prompt = 'Input the X value to shift the Eye detection area ...';
+%             x = input(prompt);
+%             prompt = 'Input the Y value to shift the Eye detection area ...';
+%             y = input(prompt);
+%             Ex = Ex +x;
+%             Ey = Ey +y;
+%             
+%             
+%             hold off,imagesc(FirstImage(1:150,1:200))
+%             colormap(gray)
+%             hold on
+%             %Eyeblink detection area
+%             plot([Ex(1) Ex(1)],[Ey(1) Ey(2)],'r-')
+%             plot([Ex(2) Ex(2)],[Ey(1) Ey(2)],'r-')
+%             plot([Ex(1) Ex(2)],[Ey(1) Ey(1)],'r-')
+%             plot([Ex(1) Ex(2)],[Ey(2) Ey(2)],'r-')
+%             
+%             prompt = 'Good? Press 0, Bad? Press 1...';
+%             EyeDetectionOK = input(prompt);
+%         end
+%     end
     % BaseImage = gpuArray(s(1).Data(72:126,95:173));
     BaseImage = s(1).Data(70:95,75:180);%72:92,95:173)
     BaseImageBall = s(1).Data(450:end,457:928);
-%     BaseImageEye = s(1).Data(57:91,21:54);
+    %     BaseImageEye = s(1).Data(57:91,21:54);
     for i = 1:steps
         
         EyeLumi = s(i).Data(Ey(1):Ey(2),Ex(1):Ex(2));
+        EyeLumi = reshape(EyeLumi,[],1);
+        s(i).EyeBlink = mean(topkrows(EyeLumi,50,'ascend'));
         LaserLumiL = s(i).Data(61:88,33:72);
         LaserLumiR = s(i).Data(329:355,398:425);
         LaserLumiL = reshape(LaserLumiL,[],1);
@@ -89,8 +91,8 @@ for jj = 1:Fparts
         ChR2LaserLumi = reshape(ChR2LaserLumi,[],1);
         
         ChR2LaserLumi = mean(topkrows(ChR2LaserLumi,50));
-%         s(i).EyeBlink = mean(mean(EyeLumi<150));
-        s(i).EyeBlink = length(find(EyeLumi<100));
+        %         s(i).EyeBlink = mean(mean(EyeLumi<150));
+        %         s(i).EyeBlink = length(find(EyeLumi<100));
         
         s(i).Laser = LaserLumi;
         s(i).ChR2Laser = mean(mean(ChR2LaserLumi));
@@ -101,14 +103,14 @@ for jj = 1:Fparts
         s(i).Position = mean(Xaxis(Line<110));
         
         if i>2
-        BaseImageBall = s(i-1).Data(450:end,457:928);
-        BaseImage = s(i-1).Data(70:95,75:180);
-        BaseImageEye = s(i-1).Data(57:91,21:54);
+            BaseImageBall = s(i-1).Data(450:end,457:928);
+            BaseImage = s(i-1).Data(70:95,75:180);
+            BaseImageEye = s(i-1).Data(57:91,21:54);
         end
         Ball = s(i).Data(450:end,457:928);
         s(i).R_Ball = corr2(BaseImageBall, Ball);
-%         Eye = s(i).Data(57:91,21:54);
-%         s(i).R_Eye = corr2(BaseImageEye, Eye);
+        %         Eye = s(i).Data(57:91,21:54);
+        %         s(i).R_Eye = corr2(BaseImageEye, Eye);
         s(i).R = corr2(BaseImage, s(i).Data(70:95,75:180));
         
     end
@@ -124,8 +126,8 @@ for jj = 1:Fparts
     LaserOnsetFrame = LaserOnsetFrame +1;
     DiffLaserOnset = diff(LaserOnsetFrame);
     
-%     LaserOnsetFrame(2:end+1)=LaserOnsetFrame;
-%     LaserOnsetFrame(1)=1;
+    %     LaserOnsetFrame(2:end+1)=LaserOnsetFrame;
+    %     LaserOnsetFrame(1)=1;
     [~,LaserOffsetFrame] = findpeaks(-LaserOnset,'MinPeakHeight',150,'MinPeakDistance',450);
     LaserOffsetFrame = LaserOffsetFrame +1;
     DiffLaserOnset = diff(LaserOnsetFrame);
@@ -140,7 +142,7 @@ for jj = 1:Fparts
     ChR2LaserOnset = diff(ChR2Laser);
     ChR2LaserOnsetFrame = find(ChR2LaserOnset==200)+1;
     %     LaserOnsetFrame(2:end+1)=LaserOnsetFrame;
-%     LaserOnsetFrame(1)=1;
+    %     LaserOnsetFrame(1)=1;
     ChR2LaserOffsetFrame = find(ChR2LaserOnset==-200)+1;
     ChR2LaserDurationFrame = ChR2LaserOffsetFrame-ChR2LaserOnsetFrame;
     
@@ -158,17 +160,18 @@ for jj = 1:Fparts
     
     
     
-    PreEyeBlink = vertcat(s.EyeBlink);
     d1 = designfilt('bandpassiir','FilterOrder',12, ...
         'HalfPowerFrequency1',0.05,'HalfPowerFrequency2',0.6,'DesignMethod','butter');
-    EyeBlink = filtfilt(d1,PreEyeBlink);
+    RawEyeBlink = filtfilt(d1,vertcat(s.EyeBlink));
     
-%     EyeBlink(2:end) = diff(EyeBlink);
-%     EyeBlink(EyeBlink > -2*std(EyeBlink)) = 0;
-%     EyeBlink(EyeBlink < -2*std(EyeBlink)) = 1;
-%     EyeBlink(Laser>0)=0;
-    EyeBlink(EyeBlink > -15) = 0;
-    EyeBlink(EyeBlink < -15) = 1;
+    %     EyeBlink(2:end) = diff(EyeBlink);
+    %     EyeBlink(EyeBlink > -2*std(EyeBlink)) = 0;
+    %     EyeBlink(EyeBlink < -2*std(EyeBlink)) = 1;
+    %     EyeBlink(Laser>0)=0;
+    EyeBlink = RawEyeBlink;
+    EyeThr = 4;
+    EyeBlink(EyeBlink < 4) = 0;
+    EyeBlink(EyeBlink > 4) = 1;
     for p =1:length(LaserOffsetFrame)
         EyeBlink(LaserOffsetFrame(p):LaserOffsetFrame(p)+10) =0;    %remove exposer time changing frame
     end
@@ -231,7 +234,7 @@ for jj = 1:Fparts
     
     %     h2 =figure;
     %     h2.Name = [fn ' ' Pname(19:22)];
-%     Xaxis = -20:300;
+    %     Xaxis = -20:300;
     Xaxis = -20*30/1000:1*30/1000:300*30/1000;
     A = 1:length(LaserOnsetFrame);
     B = A(index);
@@ -269,17 +272,31 @@ for jj = 1:Fparts
         %         end
         box off
     end
+    
+    Frames = 1:length(EyeBlink);
+    h2 =figure;
+    h2.Name = [fn ' ' Pname(19:22)];
+    h2.Position = [0 40 Scr(3)/3 Scr(4)/2];
+    subplot(3,2,1)
+    imagesc(s((Frames(vertcat(s.EyeBlink) == min(vertcat(s.EyeBlink))))).Data(30:120,30:150)),colormap(gray)
+    title(['Eye open F=' num2str(Frames(vertcat(s.EyeBlink) == min(vertcat(s.EyeBlink))))])
+    subplot(3,2,2)
+    imagesc(s(min(Frames(EyeBlink==1))+1).Data(30:120,30:150)),colormap(gray)
+    title(['Eye close F=' num2str(min(Frames(EyeBlink==1)+1))])
+    subplot(3,2,3:4)
+    plot(vertcat(s.EyeBlink))
+    ylabel('close <- -> open')
+    
+    axis tight
+    subplot(3,2,5:6)
+    plot(RawEyeBlink)
+    hold on
+    plot([0 length(RawEyeBlink)],[EyeThr EyeThr],'k-')
+    axis tight
+    xlabel('(frame)')
 end
 
-Frames = 1:length(EyeBlink);
-    h2 =figure;
-    h2.Position = [0 40 Scr(3)/8 Scr(4)/3];
-subplot(2,1,1)
-imagesc(s(min(Frames(EyeBlink==0))).Data(30:120,30:150)),colormap(gray)
-title('Eye open')
-subplot(2,1,2)
-imagesc(s(min(Frames(EyeBlink==1))+1).Data(30:120,30:150)),colormap(gray)
-title('Eye close')
+
 % SaveFname = [Fname(1:end-12) 'AnalyzedMovie.mat'];
 % SaveFname2 = fullfile(Pname,SaveFname);
 % save(SaveFname2, 's')
