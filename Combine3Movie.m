@@ -66,7 +66,7 @@ end
 for j=vid2vid4_framedelay+1:k-200
     F(j-vid2vid4_framedelay)=im2frame(s(j).Combined);
 end
-disp('Writing ...')
+disp('Writing ...w')
 
 v = VideoWriter(SaveFileName);
 open(v)
