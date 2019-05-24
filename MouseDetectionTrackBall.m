@@ -1,6 +1,6 @@
 % function s = MouseDetectionTrackBall
 
-[Fname, Pname] = uigetfile('E:\TrackBallMovie\*Combined.avi','MultiSelect','on');
+[Fname, Pname] = uigetfile('D:\TrackBallMovie\*Combined.avi','MultiSelect','on');
 % [Fname, Pname] = uigetfile('/Users/moeko/Desktop/R139R140/*Combined.avi','MultiSelect','on');
 
 Fparts = length(Fname);
@@ -134,8 +134,8 @@ for jj = 1:Fparts
     LaserDurationFrame = LaserOffsetFrame-LaserOnsetFrame;
     
     ChR2Laser = vertcat(s.ChR2Laser);
-    ChR2Laser(ChR2Laser<239)=0;
-    ChR2Laser(ChR2Laser>239)=200;
+    ChR2Laser(ChR2Laser<250)=0;
+    ChR2Laser(ChR2Laser>250)=200;
     if ChR2Laser(1)==200
         ChR2Laser(1)=0;
     end
@@ -241,7 +241,7 @@ for jj = 1:Fparts
     for i=1:length(LaserOnsetFrame)
         subplot(7,4,i+4)
         
-        if LaserOnsetFrame(B(i))-20>0
+        if LaserOnsetFrame(B(i))-20>0 && LaserOnsetFrame(B(i))+300<length(Positions)
             plot(Xaxis,Positions(LaserOnsetFrame(B(i))-20:LaserOnsetFrame(B(i))+300),'b-')
             hold on
             plot(Xaxis,2*Laser(LaserOnsetFrame(B(i))-20:LaserOnsetFrame(B(i))+300)+250,'r-')
@@ -250,7 +250,7 @@ for jj = 1:Fparts
             plot(Xaxis,200*EyeBlink(LaserOnsetFrame(B(i))-20:LaserOnsetFrame(B(i))+300)+300,'k-')
             plot(Xaxis,Speed(LaserOnsetFrame(B(i))-20:LaserOnsetFrame(B(i))+300),'c-')
             plot(Xaxis,ChR2Laser(LaserOnsetFrame(B(i))-20:LaserOnsetFrame(B(i))+300),'b-')
-        else
+        elseif LaserOnsetFrame(B(i))+300<length(Positions)
             plot(Xaxis(20:end),Positions(LaserOnsetFrame(B(i))-1:LaserOnsetFrame(B(i))+300),'b-')
             hold on
             plot(Xaxis(20:end),2*Laser(LaserOnsetFrame(B(i))-1:LaserOnsetFrame(B(i))+300)+250,'r-')
@@ -278,8 +278,13 @@ for jj = 1:Fparts
     h2.Name = [fn ' ' Pname(19:22)];
     h2.Position = [0 40 Scr(3)/3 Scr(4)/2];
     subplot(3,2,1)
-    imagesc(s((Frames(vertcat(s.EyeBlink) == min(vertcat(s.EyeBlink))))).Data(30:120,30:150)),colormap(gray)
-    title(['Eye open F=' num2str(Frames(vertcat(s.EyeBlink) == min(vertcat(s.EyeBlink))))])
+    
+    Eye = vertcat(s.EyeBlink);
+    Eye(Eye==0)=[];
+    
+    
+    imagesc(s((Frames(Eye == min(Eye)))).Data(30:120,30:150)),colormap(gray)
+    title(['Eye open F=' num2str(Frames(Eye == min(Eye)))])
     subplot(3,2,2)
     imagesc(s(min(Frames(EyeBlink==1))+1).Data(30:120,30:150)),colormap(gray)
     title(['Eye close F=' num2str(min(Frames(EyeBlink==1)+1))])
