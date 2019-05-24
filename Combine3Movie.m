@@ -34,7 +34,11 @@ k = 1;
 
 disp('Reading frames of movie 1/3...')
 while hasFrame(v)
-    s(k).Combined(1:vid2Height,1:vid2Width,1:3) = readFrame(v);
+    if k<15500
+        s(k).Combined(1:vid2Height,1:vid2Width,1:3) = readFrame(v);
+    else
+        readFrame(v);
+    end
     k = k + 1;
 end
 
