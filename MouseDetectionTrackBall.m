@@ -1,6 +1,6 @@
 % function s = MouseDetectionTrackBall
 
-[Fname, Pname] = uigetfile('D:\TrackBallMovie\*Combined.avi','MultiSelect','on');
+[Fname, Pname] = uigetfile('E:\TrackBallMovie\*Combined.avi','MultiSelect','on');
 % [Fname, Pname] = uigetfile('/Users/moeko/Desktop/R139R140/*Combined.avi','MultiSelect','on');
 
 Fparts = length(Fname);
@@ -76,12 +76,23 @@ for jj = 1:Fparts
     for i = 1:steps
         
         EyeLumi = s(i).Data(Ey(1):Ey(2),Ex(1):Ex(2));
-        LaserLumi = s(i).Data(329:355,398:425);
+        LaserLumiL = s(i).Data(61:88,33:72);
+        LaserLumiR = s(i).Data(329:355,398:425);
+        LaserLumiL = reshape(LaserLumiL,[],1);
+        LaserLumiR = reshape(LaserLumiR,[],1);
+        LaserLumiL = mean(topkrows(LaserLumiL,50));
+        LaserLumiR = mean(topkrows(LaserLumiR,100));
+        LaserLumi = mean([LaserLumiL, LaserLumiR]);
+        
+        
         ChR2LaserLumi = s(i).Data(129:139,700:719);
+        ChR2LaserLumi = reshape(ChR2LaserLumi,[],1);
+        
+        ChR2LaserLumi = mean(topkrows(ChR2LaserLumi,50));
 %         s(i).EyeBlink = mean(mean(EyeLumi<150));
         s(i).EyeBlink = length(find(EyeLumi<100));
         
-        s(i).Laser = mean(mean(LaserLumi));
+        s(i).Laser = LaserLumi;
         s(i).ChR2Laser = mean(mean(ChR2LaserLumi));
         s(i).BaseLumi = mean(mean(s(i).Data(18:54,192:289)));
         
@@ -103,8 +114,8 @@ for jj = 1:Fparts
     end
     
     Laser = vertcat(s.Laser);
-    Laser(Laser<180)=0;
-    Laser(Laser>180)=200;
+    Laser(Laser<230)=0;
+    Laser(Laser>230)=200;
     if Laser(1)==200
         Laser(1)=0;
     end
