@@ -1,7 +1,10 @@
 % function s = MouseDetectionTrackBall
 
-[Fname, Pname] = uigetfile('D:\TrackBallMovie\*Combined.avi','MultiSelect','on');
-% [Fname, Pname] = uigetfile('/Users/moeko/Desktop/R139R140/*Combined.avi','MultiSelect','on');
+if ispc
+    [Fname, Pname] = uigetfile('D:\TrackBallMovie\*Combined.avi','MultiSelect','on');
+elseif ismac
+    [Fname, Pname] = uigetfile('/Users/moeko/Desktop/R139R140/*Combined.avi','MultiSelect','on');
+end
 
 Fparts = length(Fname);
 if Fparts>10
