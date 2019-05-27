@@ -1,7 +1,10 @@
 % function s = MouseDetectionTrackBall
 
-[Fname, Pname] = uigetfile('E:\TrackBallMovie\*Combined.avi','MultiSelect','on');
-% [Fname, Pname] = uigetfile('/Users/moeko/Desktop/R139R140/*Combined.avi','MultiSelect','on');
+if ispc
+    [Fname, Pname] = uigetfile('D:\TrackBallMovie\*Combined.avi','MultiSelect','on');
+elseif ismac
+    [Fname, Pname] = uigetfile('/Users/moeko/Desktop/R139R140/*Combined.avi','MultiSelect','on');
+end
 
 Fparts = length(Fname);
 if Fparts>10
@@ -146,8 +149,8 @@ for jj = 1:Fparts
     ChR2LaserOffsetFrame = find(ChR2LaserOnset==-200)+1;
     ChR2LaserDurationFrame = ChR2LaserOffsetFrame-ChR2LaserOnsetFrame;
     
-    % ChR2Laserduration‚ÆIRlaserduration‚ğ‘Î‰‚Ã‚¯
-    IDX = knnsearch(LaserOnsetFrame,ChR2LaserOnsetFrame);%IRLaserOnset‚ÉÅ‚à‹ß‚¢ChR2LaserOnset‚ğŒ©‚Â‚¯‚é
+    % ChR2Laserdurationã¨IRlaserdurationã‚’å¯¾å¿œã¥ã‘
+    IDX = knnsearch(LaserOnsetFrame,ChR2LaserOnsetFrame);%IRLaserOnsetã«æœ€ã‚‚è¿‘ã„ChR2LaserOnsetã‚’è¦‹ã¤ã‘ã‚‹
     IDX2 = LaserOnsetFrame(IDX) - ChR2LaserOnsetFrame;
     IDX_ChR2 = IDX(abs(IDX2)<10);
     LaserDurationFrame(:,2) = zeros(length(LaserDurationFrame),1);
