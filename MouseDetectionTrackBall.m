@@ -6,6 +6,7 @@ elseif ismac
     [Fname, Pname] = uigetfile('/Users/moeko/Desktop/R139R140/*Combined.avi','MultiSelect','on');
 end
 
+
 Fparts = length(Fname);
 if Fparts>10
     Fparts=1;
