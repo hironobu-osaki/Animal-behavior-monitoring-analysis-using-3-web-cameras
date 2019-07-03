@@ -82,19 +82,22 @@ for jj = 1:Fparts
         EyeLumi = s(i).Data(Ey(1):Ey(2),Ex(1):Ex(2));
         EyeLumi = reshape(EyeLumi,[],1);
         s(i).EyeBlink = mean(topkrows(EyeLumi,50,'ascend'));
-        LaserLumiL = s(i).Data(61:88,33:62);
-        LaserLumiR = s(i).Data(329:355,398:425);
+        LaserLumiL = s(i).Data(61:78,33:62);
+        LaserLumiR = s(i).Data(310:355,370:425);
+        LaserLumiC = s(i).Data(25:60,600:680);
         LaserLumiL = reshape(LaserLumiL,[],1);
         LaserLumiR = reshape(LaserLumiR,[],1);
-        LaserLumiL = mean(topkrows(LaserLumiL,100));
-        LaserLumiR = mean(topkrows(LaserLumiR,100));
-        LaserLumi = mean([LaserLumiL, LaserLumiR]);
+        LaserLumiC = reshape(LaserLumiC,[],1);
+        LaserLumiL = mean(topkrows(LaserLumiL,50));
+        LaserLumiR = mean(topkrows(LaserLumiR,550));
+        LaserLumiC = mean(topkrows(LaserLumiC,550));
+        LaserLumi = mean([LaserLumiL, LaserLumiR, LaserLumiC]);
         
         
         ChR2LaserLumi = s(i).Data(119:139,700:730);
         ChR2LaserLumi = reshape(ChR2LaserLumi,[],1);
         
-        ChR2LaserLumi = mean(topkrows(ChR2LaserLumi,100));
+        ChR2LaserLumi = mean(topkrows(ChR2LaserLumi,150));
         %         s(i).EyeBlink = mean(mean(EyeLumi<150));
         %         s(i).EyeBlink = length(find(EyeLumi<100));
         
@@ -120,8 +123,17 @@ for jj = 1:Fparts
     end
     
     Laser = vertcat(s.Laser);
-    Laser(Laser<240)=0;
-    Laser(Laser>240)=200;
+    ChR2Laser = vertcat(s.ChR2Laser);
+    figure, plot(Laser, 'r-')
+    hold on
+    plot(ChR2Laser, 'b-')
+    LaserTh = 230+10;
+    ChR2Th = 230;
+    plot([0 length(Laser)],[LaserTh LaserTh], 'r-')
+    plot([0 length(Laser)],[ChR2Th ChR2Th], 'c-')
+    
+    Laser(Laser<LaserTh)=0;
+    Laser(Laser>LaserTh)=200;
     if Laser(1)==200
         Laser(1)=0;
     end
@@ -137,9 +149,9 @@ for jj = 1:Fparts
     DiffLaserOnset = diff(LaserOnsetFrame);
     LaserDurationFrame = LaserOffsetFrame-LaserOnsetFrame;
     
-    ChR2Laser = vertcat(s.ChR2Laser);
-    ChR2Laser(ChR2Laser<250)=0;
-    ChR2Laser(ChR2Laser>250)=200;
+    
+    ChR2Laser(ChR2Laser<ChR2Th)=0;
+    ChR2Laser(ChR2Laser>ChR2Th)=200;
     if ChR2Laser(1)==200
         ChR2Laser(1)=0;
     end
