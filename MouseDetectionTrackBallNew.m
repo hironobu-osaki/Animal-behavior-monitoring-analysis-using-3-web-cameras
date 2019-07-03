@@ -169,6 +169,10 @@ for jj = 1:Fparts
     ChR2LaserOnsetFrame(ChR2LaserDurationFrame < 5) = [];
     ChR2LaserOffsetFrame(ChR2LaserDurationFrame < 5) = [];
     ChR2LaserDurationFrame(ChR2LaserDurationFrame < 5) = [];
+    ChR2Laser = zeros(length(ChR2Laser),1);
+    for kk = 1:length(ChR2LaserDurationFrame)
+        ChR2Laser(ChR2LaserOnsetFrame(kk):ChR2LaserOffsetFrame(kk))=200;
+    end
     
     ChR2orIR_Laser= ChR2Laser+Laser;
     ChR2orIR_Laser(ChR2orIR_Laser>1)=1;
@@ -272,7 +276,7 @@ for jj = 1:Fparts
     A = 1:length(ChR2orIR_LaserOnsetFrame);
     B = A(index);
     for i=1:length(ChR2orIR_LaserOnsetFrame)
-        subplot(6,6,i+6)
+        subplot(6,5,i+5)
         
         if ChR2orIR_LaserOnsetFrame(B(i))-20>0 && ChR2orIR_LaserOnsetFrame(B(i))+300<length(Positions)
             plot(Xaxis,Positions(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))+300),'b-')
