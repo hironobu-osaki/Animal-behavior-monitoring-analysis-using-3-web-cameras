@@ -223,9 +223,14 @@ for jj = 1:Fparts
     
     r = groot;
     Scr = r.ScreenSize;
+    
+    
     h1 =figure;
     h1.Name = [fn ' ' Pname(19:22)];
     h1.Position = [0 40 2*Scr(3)/3 Scr(4)-120];
+    
+    
+    
     subplot(6,6,1:6)
     plot(Positions,'b-')
     hold on
@@ -275,8 +280,24 @@ for jj = 1:Fparts
     Xaxis = -20*30/1000:1*30/1000:300*30/1000;
     A = 1:length(ChR2orIR_LaserOnsetFrame);
     B = A(index);
+    ITI = diff(ChR2orIR_LaserOnsetFrame);
+    ControlOnsetFrames = ChR2orIR_LaserOnsetFrame(ITI>1000)+507;
+    OnsetFrames = sort(vertcat(ChR2orIR_LaserOnsetFrame,ControlOnsetFrames));
+    while length(OnsetFrames)<30
+        if OnsetFrames(1)>520
+            ControlOnsetFrames = vertcat(ControlOnsetFrames, OnsetFrames(1)-507);
+            AddControlOnsetFrames =  OnsetFrames(1)-507;
+            OnsetFrames = sort(vertcat(OnsetFrames,AddControlOnsetFrames));
+        else
+            ITI = diff(OnsetFrames);
+            AddControlOnsetFrames = OnsetFrames(ITI>1000)+507;
+            ControlOnsetFrames = vertcat(ControlOnsetFrames,AddControlOnsetFrames);
+            OnsetFrames = sort(vertcat(OnsetFrames,AddControlOnsetFrames));
+        end
+    end
+    
     for i=1:length(ChR2orIR_LaserOnsetFrame)
-        subplot(6,5,i+5)
+        subplot(7,5,i+5)
         
         if ChR2orIR_LaserOnsetFrame(B(i))-20>0 && ChR2orIR_LaserOnsetFrame(B(i))+300<length(Positions)
             plot(Xaxis,Positions(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))+300),'b-')
@@ -297,20 +318,89 @@ for jj = 1:Fparts
             plot(Xaxis(20:end),Speed(ChR2orIR_LaserOnsetFrame(B(i))-1:ChR2orIR_LaserOnsetFrame(B(i))+300),'c-')
             plot(Xaxis(20:end),ChR2Laser(ChR2orIR_LaserOnsetFrame(B(i))-1:ChR2orIR_LaserOnsetFrame(B(i))+300),'b-')
         else
-            Xend = length(Positions(ChR2orIR_LaserOnsetFrame(B(i))-20:end));
-            plot(Xaxis(1:Xend),Positions(ChR2orIR_LaserOnsetFrame(B(i))-20:end),'b-')
+            plot(Xaxis,Positions(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))+300),'b-')
             hold on
-            plot(Xaxis(1:Xend),2*Laser(ChR2orIR_LaserOnsetFrame(B(i))-20:end),'r-')
-            plot(Xaxis(1:Xend),200*ForelimbMove(ChR2orIR_LaserOnsetFrame(B(i))-20:end),'g-')
+            plot(Xaxis,2*Laser(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))+300)+250,'r-')
+            plot(Xaxis,200*ForelimbMove(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))+300),'g-')
             plot([-20*30/1000 300*30/1000],[236 236],'k:')
-            plot(Xaxis(1:Xend),200*EyeBlink(ChR2orIR_LaserOnsetFrame(B(i))-20:end),'k-')
-            plot(Xaxis(1:Xend),Speed(ChR2orIR_LaserOnsetFrame(B(i))-20:end),'c-')
-            plot(Xaxis(1:Xend),ChR2Laser(ChR2orIR_LaserOnsetFrame(B(i))-20:end),'b-')
+            plot(Xaxis,200*EyeBlink(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))+300)+300,'k-')
+            plot(Xaxis,Speed(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))+300),'c-')
+            plot(Xaxis,ChR2Laser(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))+300),'b-')
+            
+            %             Xend = length(Positions(ChR2orIR_LaserOnsetFrame(B(i))-20:end));
+            %             plot(Xaxis(1:Xend),Positions(ChR2orIR_LaserOnsetFrame(B(i))-20:end),'b-')
+            %             hold on
+            %             plot(Xaxis(1:Xend),2*Laser(ChR2orIR_LaserOnsetFrame(B(i))-20:end),'r-')
+            %             plot(Xaxis(1:Xend),200*ForelimbMove(ChR2orIR_LaserOnsetFrame(B(i))-20:end),'g-')
+            %             plot([-20*30/1000 300*30/1000],[236 236],'k:')
+            %             plot(Xaxis(1:Xend),200*EyeBlink(ChR2orIR_LaserOnsetFrame(B(i))-20:end),'k-')
+            %             plot(Xaxis(1:Xend),Speed(ChR2orIR_LaserOnsetFrame(B(i))-20:end),'c-')
+            %             plot(Xaxis(1:Xend),ChR2Laser(ChR2orIR_LaserOnsetFrame(B(i))-20:end),'b-')
         end
+        
+        % Calculate 100ms(frame +3) - 5000ms(frame +150)
+        Params(i).DiffPosi = Positions(ChR2orIR_LaserOnsetFrame(B(i))-1) - min(Positions(ChR2orIR_LaserOnsetFrame(B(i))+3:ChR2orIR_LaserOnsetFrame(B(i))+150));
+        Params(i).FlimbMove = sum(1-ForelimbMove(ChR2orIR_LaserOnsetFrame(B(i))+3:ChR2orIR_LaserOnsetFrame(B(i))+150));
+        EyeBlinkDiff = diff(EyeBlink(ChR2orIR_LaserOnsetFrame(B(i))+3:ChR2orIR_LaserOnsetFrame(B(i))+150));
+        [~, EBlinkCount] = findpeaks(EyeBlinkDiff);
+        Params(i).EBlinkCount = length(EBlinkCount);
+        Params(i).Distance = sum(Speed(ChR2orIR_LaserOnsetFrame(B(i))+3:ChR2orIR_LaserOnsetFrame(B(i))+150));
+        Params(i).MaxSpeed = max(Speed(ChR2orIR_LaserOnsetFrame(B(i))+3:ChR2orIR_LaserOnsetFrame(B(i))+150));
+        
+        
         title(['L' num2str(B(i))])
         
         
         ylabel('Left<- ->Right')
+        
+        if i == 1
+            ylabel('IR(S)')
+        elseif i == 6
+            ylabel('IR(L)')
+        elseif i == 11
+            ylabel('ChR2')
+        elseif i == 16
+            ylabel('IR(S)+ChR2')
+        elseif i == 21
+            ylabel('IR(L)+ChR2')
+        end
+        ylim([0 500])
+        xlabel('(sec)')
+        xlim([-20*30/1000 300*30/1000])
+        %         if i ==1
+        %             legend('Position','Laser','Forelimb','','Eyeblink','Speed')
+        %         end
+        box off
+    end
+    
+    for i=1:length(ControlOnsetFrames)
+        subplot(7,5,i+30)
+        
+        plot(Xaxis,Positions(ControlOnsetFrames(i)-20:ControlOnsetFrames(i)+300),'b-')
+        hold on
+        plot(Xaxis,2*Laser(ControlOnsetFrames(i)-20:ControlOnsetFrames(i)+300)+250,'r-')
+        plot(Xaxis,200*ForelimbMove(ControlOnsetFrames(i)-20:ControlOnsetFrames(i)+300),'g-')
+        plot([-20*30/1000 300*30/1000],[236 236],'k:')
+        plot(Xaxis,200*EyeBlink(ControlOnsetFrames(i)-20:ControlOnsetFrames(i)+300)+300,'k-')
+        plot(Xaxis,Speed(ControlOnsetFrames(i)-20:ControlOnsetFrames(i)+300),'c-')
+        plot(Xaxis,ChR2Laser(ControlOnsetFrames(i)-20:ControlOnsetFrames(i)+300),'b-')
+        
+        Params(i+25).DiffPosi = Positions(ControlOnsetFrames(i)-1) - min(Positions(ControlOnsetFrames(i)+3:ControlOnsetFrames(i)+150));
+        Params(i+25).FlimbMove = sum(1-ForelimbMove(ControlOnsetFrames(i)+3:ControlOnsetFrames(i)+150));
+        EyeBlinkDiff = diff(EyeBlink(ControlOnsetFrames(i)+3:ControlOnsetFrames(i)+150));
+        [~, EBlinkCount] = findpeaks(EyeBlinkDiff);
+        Params(i+25).EBlinkCount = length(EBlinkCount);
+        Params(i+25).Distance = sum(Speed(ControlOnsetFrames(i)+3:ControlOnsetFrames(i)+150));
+        Params(i+25).MaxSpeed = max(Speed(ControlOnsetFrames(i)+3:ControlOnsetFrames(i)+150));
+
+        title('Control')
+        
+        
+        ylabel('Left<- ->Right')
+        if i==1
+            ylabel('Control')
+        end
+        
         ylim([0 500])
         xlabel('(sec)')
         xlim([-20*30/1000 300*30/1000])
@@ -346,6 +436,50 @@ for jj = 1:Fparts
     plot([0 length(RawEyeBlink)],[EyeThr EyeThr],'k-')
     axis tight
     xlabel('(frame)')
+    
+    h3 = figure;
+    h3.Name = [fn ' ' Pname(19:22)];
+    h3.Position = [2*Scr(3)/3 Scr(3)/10 Scr(3)/5 Scr(4)/2];
+    subplot(5,1,1)
+    X = [ones(1,5)*3,ones(1,5)*5,ones(1,5)*2,ones(1,5)*4,ones(1,5)*6,ones(1,5)];
+    X2 = [3,5,2,4,6,1];
+    Y = vertcat(Params.DiffPosi);
+    Y2 = mean(reshape(Y,[5,6]),1);
+    bar(X2,Y2,'w')
+    hold on
+    plot(X,Y,'o')
+    title('DiffPosi')
+    subplot(5,1,4)
+    Y = vertcat(Params.FlimbMove);
+    Y2 = mean(reshape(Y,[5,6]),1);
+    bar(X2,Y2,'w')
+    hold on
+    plot(X,Y,'o')
+    title('FlimbMove')
+    subplot(5,1,5)
+    Y = vertcat(Params.EBlinkCount);
+    Y2 = mean(reshape(Y,[5,6]),1);
+    bar(X2,Y2,'w')
+    hold on
+    plot(X,Y,'o')
+    title('EBlinkCount')
+    txt1 = ['1=control, 2=ChR(+),3=LaserS,4=LaserS+ChR,5=LaserL,6=LaserL+ChR2'];
+    text(-2,-3,txt1)
+    subplot(5,1,2)
+    Y = vertcat(Params.Distance);
+    Y2 = mean(reshape(Y,[5,6]),1);
+    bar(X2,Y2,'w')
+    hold on
+    plot(X,Y,'o')
+    title('Distance')
+    subplot(5,1,3)
+    Y = vertcat(Params.MaxSpeed);
+    Y2 = mean(reshape(Y,[5,6]),1);
+    bar(X2,Y2,'w')
+    hold on
+    plot(X,Y,'o')
+    title('MaxSpeed')
+    
 end
 
 
