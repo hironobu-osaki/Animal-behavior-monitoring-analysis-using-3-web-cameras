@@ -7,6 +7,7 @@ elseif ismac
     [Fname, Pname] = uigetfile('/Users/moeko/Desktop/R139R140/*Combined.avi','MultiSelect','on');
 end
 
+tic;
 Fparts = length(Fname);
 if Fparts>10
     Fparts=1;
@@ -77,9 +78,30 @@ for jj = 1:Fparts
     BaseImage = s(1).Data(70:95,75:180);%72:92,95:173)
     BaseImageBall = s(1).Data(450:end,457:928);
     %     BaseImageEye = s(1).Data(57:91,21:54);
+    disp(toc);
     disp('             ... finished!');
     
     for i = 1:steps
+        LowerWhiskerLumiL = mean(mean(s(i).Data(110:150,1:80)));
+        LowerWhiskerLumiR = mean(mean(s(i).Data(380:410,370:440)));
+        
+        EarL =s(i).Data(71:115,195:215);
+        EarR =s(i).Data(341:380,240:255);
+        
+        EarLaxis = 1:(115-71);
+        EarRaxis = 1:(380-341);
+        
+        EarLumidiffL = diff(mean(EarL,2));
+        EarLumidiffR = diff(mean(EarR,2));
+        
+        EarPosiL = EarLaxis(EarLumidiffL==min(EarLumidiffL));
+        if length(EarPosiL)>1
+            EarPosiL = EarPosiL(1);
+        end
+        EarPosiR = EarRaxis(EarLumidiffR==min(EarLumidiffR));
+        if length(EarPosiR)>1
+            EarPosiR = EarPosiR(1);
+        end
         
         EyeLumi = s(i).Data(Ey(1):Ey(2),Ex(1):Ex(2));
         EyeLumi = reshape(EyeLumi,[],1);
@@ -96,6 +118,8 @@ for jj = 1:Fparts
         LaserLumi = mean(mean(topkrows(LaserLumiC,50)));
 %         LaserLumi = mean([LaserLumiL, LaserLumiR, LaserLumiC]);
         
+
+        
         
         ChR2LaserLumi = s(i).Data(119:139,700:730);
         ChR2LaserLumi = reshape(ChR2LaserLumi,[],1);
@@ -107,6 +131,9 @@ for jj = 1:Fparts
         s(i).Laser = LaserLumi;
         s(i).ChR2Laser = mean(mean(ChR2LaserLumi));
         s(i).BaseLumi = mean(mean(s(i).Data(18:54,192:289)));
+        s(i).LowerWhiskLumi =mean([LowerWhiskerLumiL,LowerWhiskerLumiR]);
+        s(i).EarPosiL = EarPosiL;
+        s(i).EarPosiR = EarPosiR;
         
         Line = mean((s(i).Data(259:288,457:928)),1);
         Xaxis = 1:472;
@@ -200,7 +227,10 @@ for jj = 1:Fparts
 
     d1 = designfilt('bandpassiir','FilterOrder',12, ...
         'HalfPowerFrequency1',0.05,'HalfPowerFrequency2',0.6,'DesignMethod','butter');
+    dLowpass = designfilt('lowpassiir','FilterOrder',12, ...
+        'HalfPowerFrequency',0.01,'DesignMethod','butter');
     RawEyeBlink = filtfilt(d1,vertcat(s.EyeBlink));
+    RawEyeTightening = filtfilt(dLowpass,vertcat(s.EyeBlink));
     
     EyeBlink = RawEyeBlink;
     EyeThr = 4;
@@ -218,12 +248,27 @@ for jj = 1:Fparts
     ForelimbMove(Laser>0)=1;
     ForelimbMove(LaserOffsetFrame)=1;
     
+    EarPosiL = vertcat(s.EarPosiL);
+    EarPosiR = vertcat(s.EarPosiR);
+    
+    
+    LowerWhisk =vertcat(s.LowerWhiskLumi);
+    d = designfilt('lowpassiir','FilterOrder',12, ...
+    'HalfPowerFrequency',0.02,'DesignMethod','butter');
+
+    WhiskerRetract = filtfilt(d,LowerWhisk);
+    ThrWhisker = mean(WhiskerRetract) - std(WhiskerRetract);
+    EarPosiL =  filtfilt(d,EarPosiL);
+    EarPosiR =  filtfilt(d,EarPosiR);
+    EarPosi = mean([EarPosiL,EarPosiR],2);
+
+    
     r = groot;
     Scr = r.ScreenSize;
     
     
     h1 =figure;
-    h1.Name = [fn ' ' Pname(19:22)];
+    h1.Name = [Pname(19:22) ' ' fn];
     h1.Position = [0 40 2*Scr(3)/3 Scr(4)-120];
 
     subplot(6,6,1:6)
@@ -237,10 +282,15 @@ for jj = 1:Fparts
     plot(200*EyeBlink+250,'k-')
     plot(Speed,'c-')
     plot(ChR2Laser,'b-')
+    plot(WhiskerRetract,'m-')
+    
+    plot(RawEyeTightening,'g-')
+    plot(EarPosi*10,'y-')
+    plot([0 length(ForelimbMove)], [ThrWhisker ThrWhisker],'r-')
     ylabel('Left<- ->Right')
     ylim([0 500])
     xlabel('(frame)')
-    legend('Positions','Laser','Forelimb','','Eyeblink','Speed','ChR2')
+    legend('Positions','Laser','Forelimb','','Eyeblink','Speed','ChR2','WhiskerRetract','WhiskerThr','EarPosi')
     title([fn(1:4) ' ' fn(5:6) ' / ' fn(7:8) ' ' fn(9:10) ':' fn(11:12) ' -  ' Pname(19:22)])
     xlim([0 length(ForelimbMove)])
     box off
@@ -249,7 +299,7 @@ for jj = 1:Fparts
     A = 1:length(ChR2orIR_LaserOnsetFrame);
     B = A(index);
     ITI = diff(ChR2orIR_LaserOnsetFrame);
-    ControlOnsetFrames = ChR2orIR_LaserOnsetFrame(ITI>1000)+507;
+    ControlOnsetFrames = ChR2orIR_LaserOnsetFrame(ITI>1000)+507;  %507frameずれたところにcontrolのonsetがある
     OnsetFrames = sort(vertcat(ChR2orIR_LaserOnsetFrame,ControlOnsetFrames));
     while length(OnsetFrames)<30
         if OnsetFrames(1)>520
@@ -268,6 +318,14 @@ for jj = 1:Fparts
         end
     end
     
+    if max(ControlOnsetFrames)+150>length(ForelimbMove)
+        TrialReduce =1;
+        RestFr = 150;
+    else
+        TrialReduce =0;
+        RestFr = 150;
+    end
+    
     for i=1:length(ChR2orIR_LaserOnsetFrame)
         subplot(7,5,i+5)
         
@@ -280,6 +338,10 @@ for jj = 1:Fparts
             plot(Xaxis,200*EyeBlink(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))+300)+300,'k-')
             plot(Xaxis,Speed(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))+300),'c-')
             plot(Xaxis,ChR2Laser(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))+300),'b-')
+            plot(Xaxis,WhiskerRetract(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))+300),'m-')
+            plot(Xaxis,10*EarPosi(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))+300),'g-')
+            plot(Xaxis,RawEyeTightening(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))+300),'k-')
+            plot([Xaxis(1) Xaxis(end)], [ThrWhisker ThrWhisker],'g-')
         elseif ChR2orIR_LaserOnsetFrame(B(i))+300<length(Positions)
             plot(Xaxis(20:end),Positions(ChR2orIR_LaserOnsetFrame(B(i))-1:ChR2orIR_LaserOnsetFrame(B(i))+300),'b-')
             hold on
@@ -289,37 +351,36 @@ for jj = 1:Fparts
             plot(Xaxis(20:end),200*EyeBlink(ChR2orIR_LaserOnsetFrame(B(i))-1:ChR2orIR_LaserOnsetFrame(B(i))+300)+300,'k-')
             plot(Xaxis(20:end),Speed(ChR2orIR_LaserOnsetFrame(B(i))-1:ChR2orIR_LaserOnsetFrame(B(i))+300),'c-')
             plot(Xaxis(20:end),ChR2Laser(ChR2orIR_LaserOnsetFrame(B(i))-1:ChR2orIR_LaserOnsetFrame(B(i))+300),'b-')
+            plot(Xaxis(20:end),WhiskerRetract(ChR2orIR_LaserOnsetFrame(B(i))-1:ChR2orIR_LaserOnsetFrame(B(i))),'m-')
+            plot(Xaxis(20:end),10*EarPosi(ChR2orIR_LaserOnsetFrame(B(i))-1:ChR2orIR_LaserOnsetFrame(B(i))),'g-')
+            plot(Xaxis(20:end),RawEyeTightening(ChR2orIR_LaserOnsetFrame(B(i))-1:ChR2orIR_LaserOnsetFrame(B(i))),'k-')
+            plot([Xaxis(20) Xaxis(end)], [ThrWhisker ThrWhisker],'g-')
         else
-            plot(Xaxis(1:150+21),Positions(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))+150),'b-')
+            plot(Xaxis(1:RestFr+21),Positions(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))+RestFr),'b-')
             hold on
-            plot(Xaxis(1:150+21),2*Laser(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))+150)+250,'r-')
-            plot(Xaxis(1:150+21),200*ForelimbMove(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))+150),'g-')
+            plot(Xaxis(1:RestFr+21),2*Laser(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))+RestFr)+250,'r-')
+            plot(Xaxis(1:RestFr+21),200*ForelimbMove(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))+RestFr),'g-')
             plot([-20*30/1000 300*30/1000],[236 236],'k:')
-            plot(Xaxis(1:150+21),200*EyeBlink(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))+150)+300,'k-')
-            plot(Xaxis(1:150+21),Speed(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))+150),'c-')
-            plot(Xaxis(1:150+21),ChR2Laser(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))+150),'b-')
-            
-            %             Xend = length(Positions(ChR2orIR_LaserOnsetFrame(B(i))-20:end));
-            %             plot(Xaxis(1:Xend),Positions(ChR2orIR_LaserOnsetFrame(B(i))-20:end),'b-')
-            %             hold on
-            %             plot(Xaxis(1:Xend),2*Laser(ChR2orIR_LaserOnsetFrame(B(i))-20:end),'r-')
-            %             plot(Xaxis(1:Xend),200*ForelimbMove(ChR2orIR_LaserOnsetFrame(B(i))-20:end),'g-')
-            %             plot([-20*30/1000 300*30/1000],[236 236],'k:')
-            %             plot(Xaxis(1:Xend),200*EyeBlink(ChR2orIR_LaserOnsetFrame(B(i))-20:end),'k-')
-            %             plot(Xaxis(1:Xend),Speed(ChR2orIR_LaserOnsetFrame(B(i))-20:end),'c-')
-            %             plot(Xaxis(1:Xend),ChR2Laser(ChR2orIR_LaserOnsetFrame(B(i))-20:end),'b-')
+            plot(Xaxis(1:RestFr+21),200*EyeBlink(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))+RestFr)+300,'k-')
+            plot(Xaxis(1:RestFr+21),Speed(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))+RestFr),'c-')
+            plot(Xaxis(1:RestFr+21),ChR2Laser(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))+RestFr),'b-')
+            plot(Xaxis(1:RestFr+21),WhiskerRetract(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))),'m-')
+            plot(Xaxis(1:RestFr+21),10*EarPosi(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))),'g-')
+            plot(Xaxis(1:RestFr+21),RawEyeTightening(ChR2orIR_LaserOnsetFrame(B(i))-20:ChR2orIR_LaserOnsetFrame(B(i))),'k-')
+            plot([Xaxis(1) Xaxis(RestFr+21)], [ThrWhisker ThrWhisker],'g-')
         end
         
-        % Calculate 100ms(frame +3) - 5000ms(frame +150)
-        Params(i).DiffPosi = Positions(ChR2orIR_LaserOnsetFrame(B(i))-1) - min(Positions(ChR2orIR_LaserOnsetFrame(B(i))+3:ChR2orIR_LaserOnsetFrame(B(i))+150));
-        Params(i).FlimbMove = sum(1-ForelimbMove(ChR2orIR_LaserOnsetFrame(B(i))+3:ChR2orIR_LaserOnsetFrame(B(i))+150));
-        EyeBlinkDiff = diff(EyeBlink(ChR2orIR_LaserOnsetFrame(B(i))+3:ChR2orIR_LaserOnsetFrame(B(i))+150));
+        % Calculate 100ms(frame +3) - 5000ms(frame +RestFr)
+        Params(i).DiffPosi = Positions(ChR2orIR_LaserOnsetFrame(B(i))-1) - min(Positions(ChR2orIR_LaserOnsetFrame(B(i))+3:ChR2orIR_LaserOnsetFrame(B(i))+RestFr));
+        Params(i).FlimbMove = sum(1-ForelimbMove(ChR2orIR_LaserOnsetFrame(B(i))+3:ChR2orIR_LaserOnsetFrame(B(i))+RestFr));
+        EyeBlinkDiff = diff(EyeBlink(ChR2orIR_LaserOnsetFrame(B(i))+3:ChR2orIR_LaserOnsetFrame(B(i))+RestFr));
         [~, EBlinkCount] = findpeaks(EyeBlinkDiff);
         Params(i).EBlinkCount = length(EBlinkCount);
-        Params(i).Distance = sum(Speed(ChR2orIR_LaserOnsetFrame(B(i))+3:ChR2orIR_LaserOnsetFrame(B(i))+150));
-        Params(i).MaxSpeed = max(Speed(ChR2orIR_LaserOnsetFrame(B(i))+3:ChR2orIR_LaserOnsetFrame(B(i))+150));
-        
-        
+        Params(i).Distance = sum(Speed(ChR2orIR_LaserOnsetFrame(B(i))+3:ChR2orIR_LaserOnsetFrame(B(i))+RestFr));
+        Params(i).MaxSpeed = max(Speed(ChR2orIR_LaserOnsetFrame(B(i))+3:ChR2orIR_LaserOnsetFrame(B(i))+RestFr));
+        Params(i).WhiskerRetract =max(ThrWhisker - min(WhiskerRetract(ChR2orIR_LaserOnsetFrame(B(i))+3:ChR2orIR_LaserOnsetFrame(B(i))+RestFr)));  %髭引けば値大きく
+        Params(i).EarPosi = EarPosi(ChR2orIR_LaserOnsetFrame(B(i)))-min(EarPosi(ChR2orIR_LaserOnsetFrame(B(i))+3:ChR2orIR_LaserOnsetFrame(B(i))+RestFr));  %耳下がれば値大きく
+        Params(i).EyeTightening = max(RawEyeTightening(ChR2orIR_LaserOnsetFrame(B(i))+3:ChR2orIR_LaserOnsetFrame(B(i))+RestFr));  %目を細めれば値大きく
         title(['L' num2str(B(i))])
         
         
@@ -345,7 +406,7 @@ for jj = 1:Fparts
         box off
     end
     
-    for i=1:length(ControlOnsetFrames)
+    for i=1:length(ControlOnsetFrames)-TrialReduce
         subplot(7,5,i+30)
         
         if ControlOnsetFrames(i)-20>0 && ControlOnsetFrames(i)+300<length(Positions)
@@ -357,6 +418,11 @@ for jj = 1:Fparts
             plot(Xaxis,200*EyeBlink(ControlOnsetFrames(i)-20:ControlOnsetFrames(i)+300)+300,'k-')
             plot(Xaxis,Speed(ControlOnsetFrames(i)-20:ControlOnsetFrames(i)+300),'c-')
             plot(Xaxis,ChR2Laser(ControlOnsetFrames(i)-20:ControlOnsetFrames(i)+300),'b-')
+            plot(Xaxis,WhiskerRetract(ControlOnsetFrames(i)-20:ControlOnsetFrames(i)+300),'m-')
+            plot(Xaxis,10*EarPosi(ControlOnsetFrames(i)-20:ControlOnsetFrames(i)+300)+300,'g-')
+            plot(Xaxis,RawEyeTightening(ControlOnsetFrames(i)-20:ControlOnsetFrames(i)+300),'k-')
+            plot([Xaxis(1) Xaxis(end)], [ThrWhisker ThrWhisker],'g-')
+            
         else
             plot(Xaxis(1:150+21),Positions(ControlOnsetFrames(i)-20:ControlOnsetFrames(i)+150),'b-')
             hold on
@@ -366,6 +432,10 @@ for jj = 1:Fparts
             plot(Xaxis(1:150+21),200*EyeBlink(ControlOnsetFrames(i)-20:ControlOnsetFrames(i)+150)+300,'k-')
             plot(Xaxis(1:150+21),Speed(ControlOnsetFrames(i)-20:ControlOnsetFrames(i)+150),'c-')
             plot(Xaxis(1:150+21),ChR2Laser(ControlOnsetFrames(i)-20:ControlOnsetFrames(i)+150),'b-')
+            plot(Xaxis(1:150+21),WhiskerRetract(ControlOnsetFrames(i)-20:ControlOnsetFrames(i)+150),'m-')
+            plot(Xaxis(1:150+21),10*EarPosi(ControlOnsetFrames(i)-20:ControlOnsetFrames(i)+150),'g-')
+            plot(Xaxis(1:150+21),RawEyeTightening(ControlOnsetFrames(i)-20:ControlOnsetFrames(i)+150),'k-')
+            plot([Xaxis(1) Xaxis(150+21)], [ThrWhisker ThrWhisker],'g-')
         end
         
         Params(i+25).DiffPosi = Positions(ControlOnsetFrames(i)-1) - min(Positions(ControlOnsetFrames(i)+3:ControlOnsetFrames(i)+150));
@@ -375,6 +445,11 @@ for jj = 1:Fparts
         Params(i+25).EBlinkCount = length(EBlinkCount);
         Params(i+25).Distance = sum(Speed(ControlOnsetFrames(i)+3:ControlOnsetFrames(i)+150));
         Params(i+25).MaxSpeed = max(Speed(ControlOnsetFrames(i)+3:ControlOnsetFrames(i)+150));
+        
+        Params(i+25).WhiskerRetract = max(ThrWhisker - min(WhiskerRetract(ControlOnsetFrames(i)+3:ControlOnsetFrames(i)+150)));  %髭引けば値大きく
+        Params(i+25).EarPosi = EarPosi(ControlOnsetFrames(i))-min(EarPosi(ControlOnsetFrames(i)+3:ControlOnsetFrames(i)+150));  %耳下がれば値大きく
+        Params(i+25).EyeTightening = max(RawEyeTightening(ControlOnsetFrames(i)+3:ControlOnsetFrames(i)+150));  %目を細めれば値大きく
+
 
         title('Control')
         
@@ -395,9 +470,9 @@ for jj = 1:Fparts
     
     Frames = 1:length(EyeBlink);
     h2 =figure;
-    h2.Name = [fn ' ' Pname(19:22)];
-    h2.Position = [2*Scr(3)/3 40 Scr(3)/3 Scr(4)/2];
-    subplot(3,2,1)
+    h2.Name = [Pname(19:22) ' ' fn];
+    h2.Position = [2*Scr(3)/3 40 Scr(3)/3 3*Scr(4)/4];
+    subplot(4,2,1)
     
     Eye = vertcat(s.EyeBlink);
     Eye(Eye==0)=[];
@@ -405,64 +480,183 @@ for jj = 1:Fparts
     
     imagesc(s((Frames(Eye == min(Eye)))).Data(30:120,30:150)),colormap(gray)
     title(['Eye open F=' num2str(Frames(Eye == min(Eye)))])
-    subplot(3,2,2)
+    subplot(4,2,2)
     imagesc(s(min(Frames(EyeBlink==1))+1).Data(30:120,30:150)),colormap(gray)
     title(['Eye close F=' num2str(min(Frames(EyeBlink==1)+1))])
-    subplot(3,2,3:4)
+    subplot(4,1,2)
     plot(vertcat(s.EyeBlink))
-    ylabel('close <- -> open')
+    ylabel('open <- -> close')
     
     axis tight
-    subplot(3,2,5:6)
+    subplot(4,1,3)
     plot(RawEyeBlink)
     hold on
     plot([0 length(RawEyeBlink)],[EyeThr EyeThr],'k-')
     axis tight
     xlabel('(frame)')
     
+    subplot(4,1,4)
+    plot(RawEyeTightening)
+    title('RawEyeTightening (high=severe)')
+    axis tight
+    xlabel('(frame)')
+    ylabel('open <- -> close')
+    
     h3 = figure;
-    h3.Name = [fn ' ' Pname(19:22)];
-    h3.Position = [2*Scr(3)/3 Scr(3)/10 Scr(3)/5 Scr(4)/2];
-    subplot(5,1,1)
+    h3.Name = [Pname(19:22) ' ' fn];
+    h3.Position = [2*Scr(3)/3 10 Scr(3)/5 Scr(4)-100];
+    subplot(9,1,2)
     X = [ones(1,5)*3,ones(1,5)*5,ones(1,5)*2,ones(1,5)*4,ones(1,5)*6,ones(1,5)];
     X2 = [3,5,2,4,6,1];
     Y = vertcat(Params.DiffPosi);
-    Y2 = mean(reshape(Y,[5,6]),1);
-    bar(X2,Y2,'w')
-    hold on
-    plot(X,Y,'o')
+    if length(Y)<30
+        Y=vertcat(Y,1);
+        Y2 = mean(reshape(Y,[5,6]),1);
+        Y2(end)=mean(Y(26:29));
+        bar(X2,Y2,'w')
+        hold on
+        plot(X(1:end-1),Y(1:end-1),'o')
+    else
+        Y2 = mean(reshape(Y,[5,6]),1);
+        bar(X2,Y2,'w')
+        hold on
+        plot(X,Y,'o')
+    end
+    
     title('DiffPosi')
-    subplot(5,1,4)
+    subplot(9,1,3)
+    Y = vertcat(Params.Distance);
+    if length(Y)<30
+        Y=vertcat(Y,1);
+        Y2 = mean(reshape(Y,[5,6]),1);
+        Y2(end)=mean(Y(26:29));
+        bar(X2,Y2,'w')
+        hold on
+        plot(X(1:end-1),Y(1:end-1),'o')
+    else
+        Y2 = mean(reshape(Y,[5,6]),1);
+        bar(X2,Y2,'w')
+        hold on
+        plot(X,Y,'o')
+    end
+    title('Distance')
+    subplot(9,1,4)
+    Y = vertcat(Params.MaxSpeed);
+    if length(Y)<30
+        Y=vertcat(Y,1);
+        Y2 = mean(reshape(Y,[5,6]),1);
+        Y2(end)=mean(Y(26:29));
+        bar(X2,Y2,'w')
+        hold on
+        plot(X(1:end-1),Y(1:end-1),'o')
+    else
+        Y2 = mean(reshape(Y,[5,6]),1);
+        bar(X2,Y2,'w')
+        hold on
+        plot(X,Y,'o')
+    end
+    title('MaxSpeed')
+    subplot(9,1,5)
     Y = vertcat(Params.FlimbMove);
-    Y2 = mean(reshape(Y,[5,6]),1);
-    bar(X2,Y2,'w')
-    hold on
-    plot(X,Y,'o')
+    if length(Y)<30
+        Y=vertcat(Y,1);
+        Y2 = mean(reshape(Y,[5,6]),1);
+        Y2(end)=mean(Y(26:29));
+        bar(X2,Y2,'w')
+        hold on
+        plot(X(1:end-1),Y(1:end-1),'o')
+    else
+        Y2 = mean(reshape(Y,[5,6]),1);
+        bar(X2,Y2,'w')
+        hold on
+        plot(X,Y,'o')
+    end
     title('FlimbMove')
-    subplot(5,1,5)
+    subplot(9,1,6)
     Y = vertcat(Params.EBlinkCount);
-    Y2 = mean(reshape(Y,[5,6]),1);
-    bar(X2,Y2,'w')
-    hold on
-    plot(X,Y,'o')
+    if length(Y)<30
+        Y=vertcat(Y,1);
+        Y2 = mean(reshape(Y,[5,6]),1);
+        Y2(end)=mean(Y(26:29));
+        bar(X2,Y2,'w')
+        hold on
+        plot(X(1:end-1),Y(1:end-1),'o')
+    else
+        Y2 = mean(reshape(Y,[5,6]),1);
+        bar(X2,Y2,'w')
+        hold on
+        plot(X,Y,'o')
+    end
     title('EBlinkCount')
+    
+    
+    
+    subplot(9,3,1)
+    plot(RawEyeTightening)
+    ylabel('->Tightening')
+    title('EyeTightening')
+    subplot(9,3,2)
+    plot(EarPosi)
+    ylabel('low<->high')
+    title('EarPosi')
+    subplot(9,3,3)
+    plot(WhiskerRetract)
+    title('WhiskerRetract')
+    ylabel('retract<-')
+    
+    subplot(9,1,7)
+    Y = vertcat(Params.WhiskerRetract);
+    if length(Y)<30
+        Y=vertcat(Y,1);
+        Y2 = mean(reshape(Y,[5,6]),1);
+        Y2(end)=mean(Y(26:29));
+        bar(X2,Y2,'w')
+        hold on
+        plot(X(1:end-1),Y(1:end-1),'o')
+    else
+        Y2 = mean(reshape(Y,[5,6]),1);
+        bar(X2,Y2,'w')
+        hold on
+        plot(X,Y,'o')
+    end
+    title('WhiskerRetract(high=Severe)')
+    
+    subplot(9,1,8)
+    Y = vertcat(Params.EarPosi);
+    if length(Y)<30
+        Y=vertcat(Y,1);
+        Y2 = mean(reshape(Y,[5,6]),1);
+        Y2(end)=mean(Y(26:29));
+        bar(X2,Y2,'w')
+        hold on
+        plot(X(1:end-1),Y(1:end-1),'o')
+    else
+        Y2 = mean(reshape(Y,[5,6]),1);
+        bar(X2,Y2,'w')
+        hold on
+        plot(X,Y,'o')
+    end
+    title('EarPosi(high=Severe)')
+    
+    subplot(9,1,9)
+    Y = vertcat(Params.EyeTightening);
+    if length(Y)<30
+        Y=vertcat(Y,1);
+        Y2 = mean(reshape(Y,[5,6]),1);
+        Y2(end)=mean(Y(26:29));
+        bar(X2,Y2,'w')
+        hold on
+        plot(X(1:end-1),Y(1:end-1),'o')
+    else
+        Y2 = mean(reshape(Y,[5,6]),1);
+        bar(X2,Y2,'w')
+        hold on
+        plot(X,Y,'o')
+    end
+    title('EyeTightening(high=Severe)')
+    
     txt1 = ['1=control, 2=ChR(+),3=LaserS,4=LaserS+ChR,5=LaserL,6=LaserL+ChR2'];
     text(-2,-3,txt1)
-    subplot(5,1,2)
-    Y = vertcat(Params.Distance);
-    Y2 = mean(reshape(Y,[5,6]),1);
-    bar(X2,Y2,'w')
-    hold on
-    plot(X,Y,'o')
-    title('Distance')
-    subplot(5,1,3)
-    Y = vertcat(Params.MaxSpeed);
-    Y2 = mean(reshape(Y,[5,6]),1);
-    bar(X2,Y2,'w')
-    hold on
-    plot(X,Y,'o')
-    title('MaxSpeed')
-    
 end
 
 
