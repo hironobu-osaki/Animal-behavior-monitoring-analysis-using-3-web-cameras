@@ -91,13 +91,13 @@ end
 
 Laser = vertcat(s.Laser);
 ChR2Laser = vertcat(s.ChR2Laser);
-figure, plot(Laser, 'r-')
-hold on
-plot(ChR2Laser, 'b-')
+% figure, plot(Laser, 'r-')
+% hold on
+% plot(ChR2Laser, 'b-')
 LaserTh = round((256-mean(vertcat(s.Laser)))*0.6+mean(vertcat(s.Laser)));
 ChR2Th = round((256-mean(vertcat(s.ChR2Laser)))*0.6+mean(vertcat(s.ChR2Laser)));
-plot([0 length(Laser)],[LaserTh LaserTh], 'r-')
-plot([0 length(Laser)],[ChR2Th ChR2Th], 'c-')
+% plot([0 length(Laser)],[LaserTh LaserTh], 'r-')
+% plot([0 length(Laser)],[ChR2Th ChR2Th], 'c-')
 
 Laser(Laser<LaserTh)=0;
 Laser(Laser>LaserTh)=200;
@@ -250,7 +250,12 @@ end
 
 
 while length(OnsetFrames)<MaxTr
-    if OnsetFrames(1)>520
+    ITI = diff(OnsetFrames);
+    if max(ITI)>1000
+        AddControlOnsetFrames = OnsetFrames(ITI>1000)+507;
+        ControlOnsetFrames = vertcat(ControlOnsetFrames,AddControlOnsetFrames);
+        OnsetFrames = sort(vertcat(OnsetFrames,AddControlOnsetFrames));
+    elseif OnsetFrames(1)>520
         ControlOnsetFrames = vertcat(ControlOnsetFrames, OnsetFrames(1)-507);
         AddControlOnsetFrames =  OnsetFrames(1)-507;
         OnsetFrames = sort(vertcat(OnsetFrames,AddControlOnsetFrames));
@@ -259,12 +264,24 @@ while length(OnsetFrames)<MaxTr
         ControlOnsetFrames = vertcat(ControlOnsetFrames,AddControlOnsetFrames);
         OnsetFrames = sort(vertcat(OnsetFrames,AddControlOnsetFrames));
     else
-        ITI = diff(OnsetFrames);
-        AddControlOnsetFrames = OnsetFrames(ITI>1000)+507;
-        ControlOnsetFrames = vertcat(ControlOnsetFrames,AddControlOnsetFrames);
-        OnsetFrames = sort(vertcat(OnsetFrames,AddControlOnsetFrames));
+
     end
-    if max(ControlOnsetFrames)+150<length(ForelimbMove)
+%     
+%     if OnsetFrames(1)>520
+%         ControlOnsetFrames = vertcat(ControlOnsetFrames, OnsetFrames(1)-507);
+%         AddControlOnsetFrames =  OnsetFrames(1)-507;
+%         OnsetFrames = sort(vertcat(OnsetFrames,AddControlOnsetFrames));
+%     elseif length(s) - OnsetFrames(end)>520
+%         AddControlOnsetFrames = OnsetFrames(end)+507;
+%         ControlOnsetFrames = vertcat(ControlOnsetFrames,AddControlOnsetFrames);
+%         OnsetFrames = sort(vertcat(OnsetFrames,AddControlOnsetFrames));
+%     else
+%         ITI = diff(OnsetFrames);
+%         AddControlOnsetFrames = OnsetFrames(ITI>1000)+507;
+%         ControlOnsetFrames = vertcat(ControlOnsetFrames,AddControlOnsetFrames);
+%         OnsetFrames = sort(vertcat(OnsetFrames,AddControlOnsetFrames));
+%     end
+    if max(ITI)<600 && max(ControlOnsetFrames)+150<length(ForelimbMove)
         disp(['Final trial is ' num2str(length(OnsetFrames)) '.'])
         break
     end
@@ -656,6 +673,8 @@ h1.Renderer = 'painters';
 h3.Renderer = 'painters';
 saveas(h1,[Pname fn(1:end-12) 'Alltrial.pdf'],'pdf')
 saveas(h3,[Pname fn(1:end-12) 'hist.pdf'],'pdf')
+saveas(h1,[Pname fn(1:end-12) 'Alltrial.pdf'],'png')
+saveas(h3,[Pname fn(1:end-12) 'hist.pdf'],'png')
 
 SaveFname = fullfile(Pname, [fn(1:end-12) 'AnalyzedData.mat']);
 save(SaveFname, 'Params')
