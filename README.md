@@ -1,4 +1,4 @@
-# AnimalDetection
+# Animal behavior monitoring
 Animal behavior monitoring &amp; analysis using 3 web cameras
 "MouseDetectionTrackBall_VariableIRlength.m"
 
